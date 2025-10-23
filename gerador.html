@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerador de Etiquetas PRN</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    label, select, button { display: block; margin: 15px 0; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>Gerador de Etiquetas PRN</h2>
+
+  <label for="tamanho">Tamanho da etiqueta (Largura x Altura em dots)</label>
+  <select id="tamanho">
+    <option value="q831,Q240">83×240</option>
+    <option value="q600,Q220">60×220</option>
+    <option value="q400,Q150">40×150</option>
+  </select>
+
+  <label for="modelo">Modelo da impressora</label>
+  <select id="modelo">
+    <option value="PLA">Argox</option>
+    <option value="PLB">Elgin</option>
+    <option value="PLA">Zebra</option>
+  </select>
+
+  <button onclick="gerarPRN()">Gerar PRN</button>
+
+  <script>
+    function gerarPRN() {
+      const tamanho = document.getElementById('tamanho').value.split(',');
+      const largura = tamanho[0];
+      const altura = tamanho[1];
+      const modelo = document.getElementById('modelo').value;
+
+      const cabecalho = `I8,${modelo},001\n${altura},024\n${largura}\nrN\nS4\nD7\nZT\nJF\nO\nR0,0\nf100\nN`;
+      const corpo = `\nA803,189,2,4,2,2,N,"+DESC"\nA495,92,2,4,3,3,N,"R$ +PRECO"\nB806,115,2,1,2,6,80,B,"+CODBAR"\nP+QTD`;
+      const conteudo = cabecalho + corpo;
+
+      const blob = new Blob([conteudo], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `etiqueta_${modelo}.prn`;
+      link.click();
+    }
+  </script>
+</body>
+</html>
