@@ -4,26 +4,38 @@
   <meta charset="UTF-8">
   <title>Gerador de Etiquetas PRN</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
-    label, select, button { display: block; margin: 15px 0; width: 100%; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+    h2 { margin-bottom: 10px; }
+    label { font-weight: bold; margin-top: 20px; display: block; }
+    .group { margin: 10px 0; }
+    button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
   </style>
 </head>
 <body>
   <h2>Gerador de Etiquetas PRN</h2>
 
-  <label for="tamanho">Tamanho da etiqueta (Largura x Altura em dots)</label>
-  <select id="tamanho">
-    <option value="q831,Q240">83×240</option>
-    <option value="q600,Q220">60×220</option>
-    <option value="q400,Q150">40×150</option>
-  </select>
+  <label>Tamanho da etiqueta (centímetros)</label>
+  <div class="group">
+    <select id="tamanho">
+      <option value="q831,Q240">8.3 × 2.4 cm</option>
+      <option value="q600,Q220">6.0 × 2.2 cm</option>
+      <option value="q400,Q150">4.0 × 1.5 cm</option>
+    </select>
+  </div>
 
-  <label for="modelo">Modelo da impressora</label>
-  <select id="modelo">
-    <option value="PLA">Argox</option>
-    <option value="PLB">Elgin</option>
-    <option value="PLA">Zebra</option>
-  </select>
+  <label>Modelo</label>
+  <div class="group">
+    <input type="radio" name="modelo" value="PLA" checked> Argox<br>
+    <input type="radio" name="modelo" value="PLB"> Elgin<br>
+    <input type="radio" name="modelo" value="PLA"> Zebra
+  </div>
+
+  <label>Colunas</label>
+  <div class="group">
+    <input type="radio" name="colunas" value="1" checked> 1<br>
+    <input type="radio" name="colunas" value="2"> 2<br>
+    <input type="radio" name="colunas" value="3"> 3
+  </div>
 
   <button onclick="gerarPRN()">Gerar PRN</button>
 
@@ -32,11 +44,28 @@
       const tamanho = document.getElementById('tamanho').value.split(',');
       const largura = tamanho[0];
       const altura = tamanho[1];
-      const modelo = document.getElementById('modelo').value;
+      const modelo = document.querySelector('input[name="modelo"]:checked').value;
+      const colunas = parseInt(document.querySelector('input[name="colunas"]:checked').value);
 
-      const cabecalho = `I8,${modelo},001\n${altura},024\n${largura}\nrN\nS4\nD7\nZT\nJF\nO\nR0,0\nf100\nN`;
-      const corpo = `\nA803,189,2,4,2,2,N,"+DESC"\nA495,92,2,4,3,3,N,"R$ +PRECO"\nB806,115,2,1,2,6,80,B,"+CODBAR"\nP+QTD`;
-      const conteudo = cabecalho + corpo;
+      let conteudo = '';
+
+      if (modelo === 'PLA') {
+        // Cabeçalho PLA
+        conteudo += `I8,${modelo},001\n${altura},024\n${largura}\nrN\nS4\nD7\nZT\nJF\nO\nR0,0\nf100\nN`;
+        for (let i = 0; i < colunas; i++) {
+          const offset = i * 300;
+          conteudo += `\nA${803 - offset},189,2,4,2,2,N,"+DESC"\nA${495 - offset},92,2,4,3,3,N,"R$ +PRECO"\nB${806 - offset},115,2,1,2,6,80,B,"+CODBAR"`;
+        }
+        conteudo += `\nP+QTD`;
+      } else {
+        // Cabeçalho PLB
+        conteudo += `\u0002n\n\u0002M0500\n\u0002KI71\n\u0002O0220\n\u0002V0\n\u0002f322\n\u0002c0000\n\u0002e\n\u0001D\n\u0002L\nD11\nA2`;
+        for (let i = 0; i < colunas; i++) {
+          const offset = i * 300;
+          conteudo += `\n${1911 - offset}A1800650015+DESC23\n${1922 - offset}A1200230200R$ +PRECO\n1d${830 - offset}2700270020+CODBAR\n${1911 - offset}A1000120036+CODBARRI`;
+        }
+        conteudo += `\nQ+QTD\nE`;
+      }
 
       const blob = new Blob([conteudo], { type: 'text/plain' });
       const link = document.createElement('a');
